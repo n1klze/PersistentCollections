@@ -1,0 +1,19 @@
+{
+  "metadata": [
+    {
+      "src": [
+        {
+          "files": [ "src/PersistentCollections/PersistentCollections.csproj" ],
+          "cwd": "."
+        }
+      ],
+      "dest": "api"
+    }
+  ],
+  "build": {
+    "content": [
+      { "files": [ "api/**.yml", "api/index.md" ] }
+    ],
+    "dest": "_site"
+  }
+}
