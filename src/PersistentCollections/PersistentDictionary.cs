@@ -3,7 +3,9 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace PersistentCollections;
 
-public class PersistentDictionary<TKey, TValue> : IDictionary<TKey, TValue>
+public class PersistentDictionary<TKey, TValue>
+    : IPersistentCollection<PersistentDictionary<TKey, TValue>>,
+        IDictionary<TKey, TValue>
 {
     public TValue this[TKey key]
     {
@@ -54,6 +56,11 @@ public class PersistentDictionary<TKey, TValue> : IDictionary<TKey, TValue>
         throw new NotImplementedException();
     }
 
+    public PersistentDictionary<TKey, TValue> Redo()
+    {
+        throw new NotImplementedException();
+    }
+
     public bool Remove(TKey key)
     {
         throw new NotImplementedException();
@@ -64,7 +71,17 @@ public class PersistentDictionary<TKey, TValue> : IDictionary<TKey, TValue>
         throw new NotImplementedException();
     }
 
+    public PersistentDictionary<TKey, TValue> Snapshot()
+    {
+        throw new NotImplementedException();
+    }
+
     public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
+    {
+        throw new NotImplementedException();
+    }
+
+    public PersistentDictionary<TKey, TValue> Undo()
     {
         throw new NotImplementedException();
     }

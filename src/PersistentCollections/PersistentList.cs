@@ -2,7 +2,7 @@
 
 namespace PersistentCollections;
 
-public class PersistentList<T> : IList<T>
+public class PersistentList<T> : IPersistentCollection<PersistentList<T>>, IList<T>
 {
     public T this[int index]
     {
@@ -49,12 +49,27 @@ public class PersistentList<T> : IList<T>
         throw new NotImplementedException();
     }
 
+    public PersistentList<T> Redo()
+    {
+        throw new NotImplementedException();
+    }
+
     public bool Remove(T item)
     {
         throw new NotImplementedException();
     }
 
     public void RemoveAt(int index)
+    {
+        throw new NotImplementedException();
+    }
+
+    public PersistentList<T> Snapshot()
+    {
+        throw new NotImplementedException();
+    }
+
+    public PersistentList<T> Undo()
     {
         throw new NotImplementedException();
     }

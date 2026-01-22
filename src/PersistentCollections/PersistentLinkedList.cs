@@ -2,7 +2,9 @@ using System.Collections;
 
 namespace PersistentCollections;
 
-public class PersistentLinkedList<T> : ICollection<T>
+public class PersistentLinkedList<T>
+    : IPersistentCollection<PersistentLinkedList<T>>,
+        ICollection<T>
 {
     public int Count => throw new NotImplementedException();
 
@@ -33,7 +35,22 @@ public class PersistentLinkedList<T> : ICollection<T>
         throw new NotImplementedException();
     }
 
+    public PersistentLinkedList<T> Redo()
+    {
+        throw new NotImplementedException();
+    }
+
     public bool Remove(T item)
+    {
+        throw new NotImplementedException();
+    }
+
+    public PersistentLinkedList<T> Snapshot()
+    {
+        throw new NotImplementedException();
+    }
+
+    public PersistentLinkedList<T> Undo()
     {
         throw new NotImplementedException();
     }
