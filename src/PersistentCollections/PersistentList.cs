@@ -2,80 +2,269 @@
 
 namespace PersistentCollections;
 
-public class PersistentList<T> : IPersistentCollection<PersistentList<T>>, IList<T>
+/// <summary>
+/// Персистентный индексируемый список, реализованный как
+/// широкое дерево (vector trie) с фактором ветвления 32.
+///
+/// <para>
+/// Структура является <b>иммутабельной</b>:
+/// каждая модификация (Append, Set) возвращает новую версию списка,
+/// при этом старая версия остаётся доступной.
+/// </para>
+///
+/// <para>
+/// Используется техника <b>path copying</b>:
+/// при изменении копируются только узлы на пути от корня
+/// к изменяемому элементу (O(log₃₂ n)),
+/// остальные узлы переиспользуются.
+/// </para>
+/// </summary>
+/// <typeparam name="T">Тип элементов списка.</typeparam>
+public class PersistentList<T> : IPersistentCollection<PersistentList<T>>
 {
+    /// <summary>
+    /// Фактор ветвления дерева (32).
+    /// </summary>
+    private const int Branching = 32;
+
+    /// <summary>
+    /// Количество бит, используемых на уровень (log₂(32) = 5).
+    /// </summary>
+    private const int Bits = 5;
+
+    /// <summary>
+    /// Маска для выделения индекса внутри узла.
+    /// </summary>
+    private const int Mask = Branching - 1;
+
+    private readonly ArrayNode<T> root;
+    private readonly int count;
+    private readonly History<PersistentList<T>> history;
+
+    /// <summary>
+    /// Вычисляет минимальную глубину дерева,
+    /// необходимую для хранения указанного количества элементов.
+    /// </summary>
+    private static int ComputeDepth(int count)
+    {
+        int depth = 1;
+        int capacity = Branching;
+
+        while (count >= capacity)
+        {
+            capacity <<= Bits; // *32
+            depth++;
+        }
+
+        return depth;
+    }
+
+    /// <summary>
+    /// Создаёт новый экземпляр персистентного списка.
+    /// Используется внутренне при создании новых версий.
+    /// </summary>
+    private PersistentList(ArrayNode<T> root, int count, History<PersistentList<T>> history)
+    {
+        this.root = root;
+        this.count = count;
+        this.history = history;
+    }
+
+    /// <summary>
+    /// Создаёт пустой персистентный список.
+    /// </summary>
+    public static PersistentList<T> Empty()
+    {
+        var history = new History<PersistentList<T>>();
+        var root = new LeafNode<T>(new T[Branching]);
+        var list = new PersistentList<T>(root, 0, history);
+        history.Push(list);
+        return list;
+    }
+
+    /// <summary>
+    /// Количество элементов в списке.
+    /// </summary>
+    public int Count => count;
+
+    /// <summary>
+    /// Возвращает элемент по индексу.
+    /// </summary>
+    /// <param name="index">Индекс элемента.</param>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Если индекс выходит за границы списка.
+    /// </exception>
     public T this[int index]
     {
-        get => throw new NotImplementedException();
-        set => throw new NotImplementedException();
+        get
+        {
+            if (index < 0 || index >= count)
+                throw new ArgumentOutOfRangeException();
+
+            var depth = ComputeDepth(count);
+            return GetAt(root, index, 0, depth);
+        }
     }
 
-    public int Count => throw new NotImplementedException();
-
-    public bool IsReadOnly => throw new NotImplementedException();
-
-    public void Add(T item)
+    /// <summary>
+    /// Рекурсивно получает элемент по индексу,
+    /// спускаясь по дереву.
+    /// </summary>
+    private T GetAt(ArrayNode<T> node, int index, int level, int depth)
     {
-        throw new NotImplementedException();
+        if (level == depth - 1)
+        {
+            var leaf = (LeafNode<T>)node;
+            return leaf.Values[index & Mask];
+        }
+
+        var branch = (BranchNode<T>)node;
+        var shift = Bits * (depth - level - 1);
+        var childIndex = (index >> shift) & Mask;
+
+        return GetAt(branch.Children[childIndex], index, level + 1, depth);
     }
 
-    public void Clear()
+    /// <summary>
+    /// Возвращает новую версию списка с изменённым элементом по индексу.
+    /// </summary>
+    /// <param name="index">Индекс изменяемого элемента.</param>
+    /// <param name="value">Новое значение.</param>
+    /// <returns>Новая версия списка.</returns>
+    public PersistentList<T> Set(int index, T value)
     {
-        throw new NotImplementedException();
+        if (index < 0 || index >= count)
+            throw new ArgumentOutOfRangeException();
+
+        var depth = ComputeDepth(count);
+        var newRoot = SetAt(root, index, value, 0, depth);
+
+        var newList = new PersistentList<T>(newRoot, count, history);
+        history.Push(newList);
+        return newList;
     }
 
-    public bool Contains(T item)
+    /// <summary>
+    /// Реализует path copying при изменении элемента:
+    /// копирует только узлы на пути от корня к листу.
+    /// </summary>
+    private ArrayNode<T> SetAt(ArrayNode<T> node, int index, T value, int level, int depth)
     {
-        throw new NotImplementedException();
+        if (level == depth - 1)
+        {
+            var leaf = (LeafNode<T>)node;
+            return leaf.WithValue(index & Mask, value);
+        }
+
+        var branch = (BranchNode<T>)node;
+        var shift = Bits * (depth - level - 1);
+        var childIndex = (index >> shift) & Mask;
+
+        var oldChild = branch.Children[childIndex];
+        var newChild = SetAt(oldChild, index, value, level + 1, depth);
+
+        return branch.WithChild(childIndex, newChild);
     }
 
-    public void CopyTo(T[] array, int arrayIndex)
+    /// <summary>
+    /// Добавляет элемент в конец списка.
+    /// </summary>
+    /// <param name="value">Добавляемое значение.</param>
+    /// <returns>Новая версия списка.</returns>
+    public PersistentList<T> Append(T value)
     {
-        throw new NotImplementedException();
+        var newCount = count + 1;
+        var depth = ComputeDepth(newCount);
+
+        var newRoot = AppendAt(root, count, value, 0, depth);
+
+        var newList = new PersistentList<T>(newRoot, newCount, history);
+        history.Push(newList);
+        return newList;
     }
 
-    public IEnumerator<T> GetEnumerator()
+    /// <summary>
+    /// Рекурсивно добавляет элемент,
+    /// создавая новые узлы только на пути вставки.
+    /// </summary>
+    private ArrayNode<T> AppendAt(ArrayNode<T>? node, int index, T value, int level, int depth)
     {
-        throw new NotImplementedException();
+        if (level == depth - 1)
+        {
+            if (node is LeafNode<T> leaf)
+            {
+                var newValues = (T[])leaf.Values.Clone();
+                newValues[index & Mask] = value;
+                return new LeafNode<T>(newValues);
+            }
+            else
+            {
+                var values = new T[Branching];
+                values[index & Mask] = value;
+                return new LeafNode<T>(values);
+            }
+        }
+
+        BranchNode<T> branch = node is BranchNode<T> existing
+            ? existing
+            : new BranchNode<T>(new ArrayNode<T>[Branching]);
+
+        var shift = Bits * (depth - level - 1);
+        var childIndex = (index >> shift) & Mask;
+
+        var newChild = AppendAt(branch.Children[childIndex], index, value, level + 1, depth);
+
+        return branch.WithChild(childIndex, newChild);
     }
 
-    public int IndexOf(T item)
+    /// <summary>
+    /// Возвращает следующую версию из истории изменений.
+    /// </summary>
+    public PersistentList<T> Redo() => history.Redo();
+
+    /// <summary>
+    /// Возвращает текущую версию как снимок состояния.
+    /// </summary>
+    public PersistentList<T> Snapshot() => this;
+
+    /// <summary>
+    /// Возвращает предыдущую версию из истории изменений.
+    /// </summary>
+    public PersistentList<T> Undo() => history.Undo();
+}
+
+internal abstract class ArrayNode<T> { }
+
+internal sealed class BranchNode<T> : ArrayNode<T>
+{
+    public readonly ArrayNode<T>[] Children;
+
+    public BranchNode(ArrayNode<T>[] children)
     {
-        throw new NotImplementedException();
+        Children = children;
     }
 
-    public void Insert(int index, T item)
+    public BranchNode<T> WithChild(int index, ArrayNode<T> child)
     {
-        throw new NotImplementedException();
+        var newChildren = (ArrayNode<T>[])Children.Clone();
+        newChildren[index] = child;
+        return new BranchNode<T>(newChildren);
+    }
+}
+
+internal sealed class LeafNode<T> : ArrayNode<T>
+{
+    public readonly T[] Values;
+
+    public LeafNode(T[] values)
+    {
+        Values = values;
     }
 
-    public PersistentList<T> Redo()
+    public LeafNode<T> WithValue(int index, T value)
     {
-        throw new NotImplementedException();
-    }
-
-    public bool Remove(T item)
-    {
-        throw new NotImplementedException();
-    }
-
-    public void RemoveAt(int index)
-    {
-        throw new NotImplementedException();
-    }
-
-    public PersistentList<T> Snapshot()
-    {
-        throw new NotImplementedException();
-    }
-
-    public PersistentList<T> Undo()
-    {
-        throw new NotImplementedException();
-    }
-
-    IEnumerator IEnumerable.GetEnumerator()
-    {
-        return GetEnumerator();
+        var newValues = (T[])Values.Clone();
+        newValues[index] = value;
+        return new LeafNode<T>(newValues);
     }
 }
