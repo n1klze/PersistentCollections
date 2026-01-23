@@ -4,7 +4,7 @@ namespace PersistentCollections;
 
 /// <summary>
 /// Персистентный индексируемый список, реализованный как
-/// широкое дерево (vector trie) с фактором ветвления 32.
+/// дерево с ветвлением фиксированного размера (vector trie) с фактором ветвления 32.
 ///
 /// <para>
 /// Структура является <b>иммутабельной</b>:
@@ -78,7 +78,7 @@ public class PersistentList<T> : IPersistentCollection<PersistentList<T>>
         var history = new History<PersistentList<T>>();
         var root = new LeafNode<T>(new T[Branching]);
         var list = new PersistentList<T>(root, 0, history);
-        history.Push(list);
+        history.Commit(list);
         return list;
     }
 
@@ -140,7 +140,7 @@ public class PersistentList<T> : IPersistentCollection<PersistentList<T>>
         var newRoot = SetAt(root, index, value, 0, depth);
 
         var newList = new PersistentList<T>(newRoot, count, history);
-        history.Push(newList);
+        history.Commit(newList);
         return newList;
     }
 
@@ -179,7 +179,7 @@ public class PersistentList<T> : IPersistentCollection<PersistentList<T>>
         var newRoot = AppendAt(root, count, value, 0, depth);
 
         var newList = new PersistentList<T>(newRoot, newCount, history);
-        history.Push(newList);
+        history.Commit(newList);
         return newList;
     }
 
@@ -221,11 +221,6 @@ public class PersistentList<T> : IPersistentCollection<PersistentList<T>>
     /// Возвращает следующую версию из истории изменений.
     /// </summary>
     public PersistentList<T> Redo() => history.Redo();
-
-    /// <summary>
-    /// Возвращает текущую версию как снимок состояния.
-    /// </summary>
-    public PersistentList<T> Snapshot() => this;
 
     /// <summary>
     /// Возвращает предыдущую версию из истории изменений.

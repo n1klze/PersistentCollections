@@ -42,7 +42,7 @@ public class PersistentLinkedList<T> : IPersistentCollection<PersistentLinkedLis
     {
         var history = new History<PersistentLinkedList<T>>();
         var list = new PersistentLinkedList<T>(null, null, 0, history);
-        history.Push(list);
+        history.Commit(list);
         return list;
     }
 
@@ -95,7 +95,7 @@ public class PersistentLinkedList<T> : IPersistentCollection<PersistentLinkedLis
 
         var (newHead, newTail) = BuildFromValues(newValues);
         var newList = new PersistentLinkedList<T>(newHead, newTail, newValues.Count, history);
-        history.Push(newList);
+        history.Commit(newList);
         return newList;
     }
 
@@ -114,7 +114,7 @@ public class PersistentLinkedList<T> : IPersistentCollection<PersistentLinkedLis
 
         var (newHead, newTail) = BuildFromValues(newValues);
         var newList = new PersistentLinkedList<T>(newHead, newTail, newValues.Count, history);
-        history.Push(newList);
+        history.Commit(newList);
         return newList;
     }
 
@@ -145,7 +145,7 @@ public class PersistentLinkedList<T> : IPersistentCollection<PersistentLinkedLis
 
         var (newHead, newTail) = BuildFromValues(newValues);
         var newList = new PersistentLinkedList<T>(newHead, newTail, newValues.Count, history);
-        history.Push(newList);
+        history.Commit(newList);
         return newList;
     }
 
@@ -177,7 +177,7 @@ public class PersistentLinkedList<T> : IPersistentCollection<PersistentLinkedLis
 
         var (newHead, newTail) = BuildFromValues(newValues);
         var newList = new PersistentLinkedList<T>(newHead, newTail, newValues.Count, history);
-        history.Push(newList);
+        history.Commit(newList);
         return newList;
     }
 
@@ -195,7 +195,7 @@ public class PersistentLinkedList<T> : IPersistentCollection<PersistentLinkedLis
         if (head == tail)
         {
             var list = new PersistentLinkedList<T>(null, null, 0, history);
-            history.Push(list);
+            history.Commit(list);
             return list;
         }
 
@@ -206,7 +206,7 @@ public class PersistentLinkedList<T> : IPersistentCollection<PersistentLinkedLis
 
         var (newHead, newTail) = BuildFromValues(newValues);
         var newList = new PersistentLinkedList<T>(newHead, newTail, newValues.Count, history);
-        history.Push(newList);
+        history.Commit(newList);
         return newList;
     }
 
@@ -224,7 +224,7 @@ public class PersistentLinkedList<T> : IPersistentCollection<PersistentLinkedLis
         if (head == tail)
         {
             var list = new PersistentLinkedList<T>(null, null, 0, history);
-            history.Push(list);
+            history.Commit(list);
             return list;
         }
 
@@ -235,7 +235,7 @@ public class PersistentLinkedList<T> : IPersistentCollection<PersistentLinkedLis
 
         var (newHead, newTail) = BuildFromValues(newValues);
         var newList = new PersistentLinkedList<T>(newHead, newTail, newValues.Count, history);
-        history.Push(newList);
+        history.Commit(newList);
         return newList;
     }
 
@@ -244,12 +244,6 @@ public class PersistentLinkedList<T> : IPersistentCollection<PersistentLinkedLis
     /// </summary>
     /// <returns>Следующая версия списка из истории.</returns>
     public PersistentLinkedList<T> Redo() => history.Redo();
-
-    /// <summary>
-    /// Возвращает снимок текущей версии списка (тривиально — <c>this</c>).
-    /// </summary>
-    /// <returns>Текущая версия списка.</returns>
-    public PersistentLinkedList<T> Snapshot() => this;
 
     /// <summary>
     /// Отменяет последнюю операцию (Undo).

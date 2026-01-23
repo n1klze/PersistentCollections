@@ -102,7 +102,7 @@ public class PersistentDictionary<TKey, TValue>
     {
         var history = new History<PersistentDictionary<TKey, TValue>>();
         var dict = new PersistentDictionary<TKey, TValue>(null, 0, history);
-        history.Push(dict);
+        history.Commit(dict);
         return dict;
     }
 
@@ -195,7 +195,7 @@ public class PersistentDictionary<TKey, TValue>
         var newCount = added ? count + 1 : count;
 
         var newDict = new PersistentDictionary<TKey, TValue>(newRoot, newCount, history);
-        history.Push(newDict);
+        history.Commit(newDict);
         return newDict;
     }
 
@@ -328,7 +328,7 @@ public class PersistentDictionary<TKey, TValue>
             return this;
 
         var newDict = new PersistentDictionary<TKey, TValue>(newRoot, count - 1, history);
-        history.Push(newDict);
+        history.Commit(newDict);
         return newDict;
     }
 
@@ -402,11 +402,6 @@ public class PersistentDictionary<TKey, TValue>
     /// Повторяет последнюю отменённую операцию.
     /// </summary>
     public PersistentDictionary<TKey, TValue> Redo() => history.Redo();
-
-    /// <summary>
-    /// Возвращает текущую версию словаря.
-    /// </summary>
-    public PersistentDictionary<TKey, TValue> Snapshot() => this;
 
     /// <summary>
     /// Отменяет последнюю операцию.
