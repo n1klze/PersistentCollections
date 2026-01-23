@@ -4,7 +4,7 @@ namespace PersistentCollections;
 
 /// <summary>
 /// Персистентный индексируемый список, реализованный как
-/// дерево с ветвлением фиксированного размера (vector trie) с фактором ветвления 32.
+/// дерево с ветвлением фиксированного размера (RRB-tree) с фактором ветвления 32.
 ///
 /// <para>
 /// Структура является <b>иммутабельной</b>:
@@ -61,7 +61,6 @@ public class PersistentList<T> : IPersistentCollection<PersistentList<T>>
 
     /// <summary>
     /// Создаёт новый экземпляр персистентного списка.
-    /// Используется внутренне при создании новых версий.
     /// </summary>
     private PersistentList(ArrayNode<T> root, int count, History<PersistentList<T>> history)
     {
